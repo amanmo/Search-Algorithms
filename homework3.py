@@ -35,12 +35,77 @@ class Point:
 
         return (x, y, z), cost
 
+class Node:
+
+    def __init__(self, point, path, totalCost, heuristicCost, stepCost):
+        self.point = point
+        self.path = path
+        self.totalCost = totalCost
+        self.heuristicCost = heuristicCost
+        self.stepCost = stepCost
+        self.next = None
+
+class Frontier:
+
+    def __init__(self, algo):
+
+        self.front = None
+        self.rear = None
+        self.length = 0
+        self.algo = algo
+
+    def dequeue(self):
+
+        f = self.front
+        if f == self.rear:
+            self.rear = None
+        self.front = f.next
+        self.length -= 1
+        return f.point, f.path, f.totalCost, f.heuristicCost, f.stepCost
+
+    def enqueue(self, point, path, totalCost, heuristicCost, stepCost):
+
+        node = Node(point, path, totalCost, heuristicCost, stepCost)
+
+        if self.length == 0:
+            self.front = node
+            self.rear = node
+
+        elif self.algo == 'BFS':
+            r = self.rear
+            r.next = node
+            self.rear = node
+
+        else:
+            flag = False
+            check_node = self.front
+            prev_node = None
+            while check_node is not None:
+                if (self.algo == 'A*' and check_node.heuristicCost > heuristicCost) or (self.algo == 'UCS' and check_node.totalCost > totalCost):
+                    flag = True
+                    break
+                prev_node = check_node
+                check_node = check_node.next
+
+            if flag:
+                if prev_node is None:
+                    self.front = node
+                else:
+                    prev_node.next = node
+                node.next = check_node
+            else:
+                r = self.rear
+                r.next = node
+                self.rear = node
+
+        self.length += 1
+
 class Tunnel:
 
-    def parseInput(self):
+    def parseInput(self, fname):
         'Function to parse the input file'
 
-        f = open('input.txt')
+        f = open(fname)
         self.algo = f.readline().strip()
         self.max_x, self.max_y, self.max_z = [int(i) for i in f.readline().split()]
         self.init = tuple(int(i) for i in f.readline().split())
@@ -89,12 +154,13 @@ class Tunnel:
     def search(self):
         'Function to search for given ending point'
 
-        frontier = [[self.points[self.init], [], 0, 0, [0]]]
+        frontier = Frontier(self.algo)
+        frontier.enqueue(self.points[self.init], [], 0, 0, [0])
         found = False
         totalCost = 0
 
-        while len(frontier) != 0:
-            point, path, totalCost, _, stepCost = frontier.pop(0)
+        while frontier.length != 0:
+            point, path, totalCost, _, stepCost = frontier.dequeue()
             point.visited = True
             if self.checkGoal(point):
                 found = True
@@ -103,19 +169,13 @@ class Tunnel:
             for movement in point.movements:
                 x, cost = self.getNextPoint(point, movement)
                 if x is not None and x.visited is False:
-                    frontier += [
-                                    [
+                    frontier.enqueue(
                                         x, 
                                         path + [point.coordinates], 
                                         totalCost + 1 if self.algo == 'BFS' else totalCost + cost,
                                         totalCost + cost + self.heuristic(x) if self.algo == 'A*' else 0,
                                         stepCost + [1] if self.algo == 'BFS' else stepCost + [cost]
-                                    ]
-                                ]
-                    if self.algo == 'UCS':
-                        frontier.sort(key=lambda y: y[2])
-                    elif self.algo == 'A*':
-                        frontier.sort(key=lambda y: y[3])
+                                    )
 
         
         self.found = found
@@ -125,10 +185,10 @@ class Tunnel:
             self.final_path = path + [point.coordinates]
             self.stepCost = stepCost
 
-    def saveOutput(self):
+    def saveOutput(self, output):
         'Function to save results to output.txt'
 
-        with open('output.txt', 'w') as f:
+        with open(output, 'w') as f:
             if not self.found:
                 f.write('FAIL')
             else:
@@ -138,8 +198,10 @@ class Tunnel:
                 for point in range(len(self.final_path)):
                     f.write('\n' + str(self.final_path[point][0]) + ' ' + str(self.final_path[point][1]) + ' ' + str(self.final_path[point][2]) + ' ' + str(self.stepCost[point]))
 
+def main(input_file='input.txt', output_file='output.txt'):
+    t = Tunnel()
+    t.parseInput(input_file)
+    t.search()
+    t.saveOutput(output_file)
 
-t = Tunnel()
-t.parseInput()
-t.search()
-t.saveOutput()
+main()

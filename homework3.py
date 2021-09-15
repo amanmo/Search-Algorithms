@@ -155,7 +155,7 @@ class Tunnel:
         'Function to search for given ending point'
 
         frontier = Frontier(self.algo)
-        frontier.enqueue(self.points[self.init], None, 0, 0, [0])
+        frontier.enqueue(self.points[self.init], None, 0, 0, 0)
         found = False
         totalCost = 0
 
@@ -175,7 +175,7 @@ class Tunnel:
                                         node, 
                                         totalCost + 1 if self.algo == 'BFS' else totalCost + cost,
                                         totalCost + cost + self.heuristic(x) if self.algo == 'A*' else 0,
-                                        stepCost + [1] if self.algo == 'BFS' else stepCost + [cost]
+                                        1 if self.algo == 'BFS' else cost
                                     )
 
         
@@ -183,12 +183,16 @@ class Tunnel:
         if found:
             self.totalCost = totalCost
             self.final_path = []
+            self.stepCost = []
             while node[1] != None:
                 node = node[1]
-                self.final_path = [node[0].coordinates] + self.final_path
+                self.final_path += [node[0].coordinates]
+                self.stepCost += [node[4]]
+            self.final_path.reverse()
+            self.stepCost.reverse()
             self.final_path += [point.coordinates]
+            self.stepCost += [1] if self.algo == 'BFS' else [cost]
             self.path_length = len(self.final_path)
-            self.stepCost = stepCost
 
     def saveOutput(self, output):
         'Function to save results to output.txt'

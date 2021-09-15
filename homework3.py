@@ -13,7 +13,7 @@ class Point:
         'Function that returns the next set of coordinates and the cost after a movement takes place from the current point'
 
         x, y, z = self.coordinates
-        cost = 10 if movement in range(1,7) else 14
+        cost = 10 if movement < 7 else 14
 
         #X
         if movement in [1, 7, 8, 11, 12]:
@@ -155,12 +155,13 @@ class Tunnel:
         'Function to search for given ending point'
 
         frontier = Frontier(self.algo)
-        frontier.enqueue(self.points[self.init], [], 0, 0, [0])
+        frontier.enqueue(self.points[self.init], None, 0, 0, [0])
         found = False
         totalCost = 0
 
         while frontier.length != 0:
-            point, path, totalCost, _, stepCost = frontier.dequeue()
+            node = frontier.dequeue()
+            point, _, totalCost, _, stepCost = node
             point.visited = True
             if self.checkGoal(point):
                 found = True
@@ -171,7 +172,7 @@ class Tunnel:
                 if x is not None and x.visited is False:
                     frontier.enqueue(
                                         x, 
-                                        path + [point.coordinates], 
+                                        node, 
                                         totalCost + 1 if self.algo == 'BFS' else totalCost + cost,
                                         totalCost + cost + self.heuristic(x) if self.algo == 'A*' else 0,
                                         stepCost + [1] if self.algo == 'BFS' else stepCost + [cost]
@@ -181,8 +182,12 @@ class Tunnel:
         self.found = found
         if found:
             self.totalCost = totalCost
-            self.path_length = len(path) + 1
-            self.final_path = path + [point.coordinates]
+            self.final_path = []
+            while node[1] != None:
+                node = node[1]
+                self.final_path = [node[0].coordinates] + self.final_path
+            self.final_path += [point.coordinates]
+            self.path_length = len(self.final_path)
             self.stepCost = stepCost
 
     def saveOutput(self, output):

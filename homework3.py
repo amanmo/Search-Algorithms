@@ -191,7 +191,10 @@ class Tunnel:
             self.final_path.reverse()
             self.stepCost.reverse()
             self.final_path += [point.coordinates]
-            self.stepCost += [1] if self.algo == 'BFS' else [stepCost]
+            if len(self.final_path)==1:
+                self.stepCost += [0]
+            else:
+                self.stepCost += [1] if self.algo == 'BFS' else [stepCost]
             self.path_length = len(self.final_path)
 
     def saveOutput(self, output):
